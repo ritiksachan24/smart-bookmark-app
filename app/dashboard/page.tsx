@@ -14,12 +14,12 @@ export default function Dashboard() {
   useEffect(() => {
     const init = async () => {
       const { data } = await supabase.auth.getSession();
-      const user = data.session?.user;
+      const sessionUser = data.session?.user;
 
-      if (!user) {
+      if (!sessionUser) {
         router.push("/");
       } else {
-        setUser(user);
+        setUser(sessionUser);
       }
     };
 
@@ -59,9 +59,14 @@ export default function Dashboard() {
   const addBookmark = async () => {
     if (!title || !url || !user) return;
 
-    await supabase.from("bookmarks").insert([
-      { title, url, user_id: user.id },
-    ]);
+    const { data } = await supabase
+      .from("bookmarks")
+      .insert([{ title, url, user_id: user.id }])
+      .select();
+
+    if (data) {
+      setBookmarks((prev) => [data[0], ...prev]);
+    }
 
     setTitle("");
     setUrl("");
@@ -78,67 +83,72 @@ export default function Dashboard() {
 
   if (!user) return null;
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">
-            Welcome {user.email}
-          </h2>
-          <button
-            onClick={handleLogout}
-            className="text-sm bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
-          >
-            Logout
-          </button>
-        </div>
+return (
+  <div className="min-h-screen bg-gray-100 p-8">
+    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8 flex flex-col min-h-[600px]">
 
-        <div className="flex gap-2 mb-6">
-          <input
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-          />
-          <input
-            placeholder="URL"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
-          />
-          <button
-            onClick={addBookmark}
-            disabled={!title || !url}
-            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition disabled:opacity-50"
-          >
-            Add
-          </button>
-        </div>
+      <h2 className="text-2xl font-semibold text-center mb-6">
+        Welcome {user.email}
+      </h2>
 
-        <ul className="space-y-3">
-          {bookmarks.map((b) => (
-            <li
-              key={b.id}
-              className="flex justify-between items-center bg-gray-50 p-3 rounded"
-            >
-              <a
-                href={b.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
-              >
-                {b.title}
-              </a>
-              <button
-                onClick={() => deleteBookmark(b.id)}
-                className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
-              >
-                Delete
-              </button>
-            </li>
-          ))}
-        </ul>
+      <div className="flex gap-3 mb-6">
+        <input
+          placeholder="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+        />
+        <input
+          placeholder="URL"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
+        />
+        <button
+          onClick={addBookmark}
+          disabled={!title || !url}
+          className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
+        >
+          Add
+        </button>
       </div>
+
+      <div className="flex-1 overflow-y-auto space-y-3">
+        {bookmarks.map((b) => (
+          <div
+            key={b.id}
+            className="flex justify-between items-center bg-gray-50 p-4 rounded-lg"
+          >
+            <a
+              href={b.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              {b.title}
+            </a>
+            <button
+              onClick={() => deleteBookmark(b.id)}
+              className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 flex justify-center">
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition"
+        >
+          Logout
+        </button>
+      </div>
+
     </div>
-  );
+  </div>
+);
+
+
 }
